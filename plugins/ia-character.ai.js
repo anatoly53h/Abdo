@@ -1,42 +1,28 @@
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+import fetch from 'node-fetch';
 
-async function deleteInactiveUserData(m) {
-}
-
-export async function all(m) {
-  const user = global.chatgpt.data.users[m.sender];
-
-  if (user) {
-    user.lastUpdate = new Date().getTime();
-    global.chatgpt.data.users[m.sender] = user;
-  } else {
-    return; // Si no existe el usuario, no hace nada
+const handler = async (m, {conn, text, usedPrefix, command}) => {
+  if (!text) {
+    throw `_*< IA - CHARACTER.AI />*_\n\n*[ ℹ️ ] Proporciona un texto.*\n\n*[ 💡 ] Ejemplo:* _${usedPrefix + command} Hola, ¿cómo estás?_`;
   }
 
-  setTimeout(() => deleteInactiveUserData(m), INACTIVITY_TIMEOUT_MS);
-}
+  try {
+    conn.sendPresenceUpdate('composing', m.chat);
 
-/* const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+    const API_URL = `https://vihangayt.me/tools/characterai?q=${encodeURIComponent(text)}`;
+    const response = await fetch(API_URL);
+    const data = await response.json();
 
-async function deleteInactiveUserData(m) {
-  const user = global.chatgpt.data.users[m.sender];
-  const lastUpdateTime = user?.lastUpdate || 0;
-  const currentTime = new Date().getTime();
-
-  if (currentTime - lastUpdateTime > INACTIVITY_TIMEOUT_MS) {
-    delete global.chatgpt.data.users[m.sender];
-    //console.log(`Datos del usuario ${m.sender} eliminados después de ${INACTIVITY_TIMEOUT_MS / 1000 / 60} minutos de inactividad.`);
+    if (data.status && data.data) {
+      const respuestaAPI = data.data;
+      conn.reply(m.chat, respuestaAPI, m);
+    } else {
+      throw '_*< IA - CHARACTER.AI />*_\n\n*[ ℹ️ ] No se pudo obtener una respuesta válida.*';
+    }
+  } catch (error) {
+    throw `_*< IA - CHARACTER.AI />*_\n\n*[ ℹ️ ] Ocurrió un error. Por favor, inténtalo de nuevo más tarde.*`;
   }
-}
+};
 
-export async function all(m) {
-  let user = global.chatgpt.data.users[m.sender];
+handler.command = /^aicharacter$/i;
 
-  if (user) {
-    user.lastUpdate = new Date().getTime();
-    global.chatgpt.data.users[m.sender] = user;
-  }
-
-  setTimeout(() => deleteInactiveUserData(m), INACTIVITY_TIMEOUT_MS);
-
-}*/
+export default handler;
